@@ -8,9 +8,10 @@ import streamlit as st
 # model = pickle.load(pickle_in)
 
 # Define function to predict selling price
-def predict_selling_price(a, b, c):
+def predict_selling_price(model, a, b, c):
     prediction = model.predict([[a, b, c]])
     return prediction
+
 
 # Define the main function
 def main():
@@ -36,8 +37,9 @@ def main():
     
     # Prediction button
     if st.button("Predict"):
-        result = predict_selling_price(float(a), float(b), float(c))
+        result = predict_selling_price(model, float(a), float(b), float(c))
         st.success(f"The predicted selling price is: {result[0]:,.2f}")
+
 
 
 from sklearn.model_selection import train_test_split
