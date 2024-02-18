@@ -8,8 +8,8 @@ import streamlit as st
 # model = pickle.load(pickle_in)
 
 # Define function to predict selling price
-def predict_selling_price(model, a, b, c):
-    prediction = model.predict([[a, b, c]])
+def predict_selling_price(model, a, b, c, d):
+    prediction = model.predict([[a, b, c, d]])
     return prediction
 
 
@@ -31,49 +31,46 @@ def main():
     )
     
     # Input fields with placeholders
-    a = st.text_input("Item Rating", placeholder="Type Here")
-    b = st.text_input("Month", placeholder="Type Here")
-    c = st.text_input("Year", placeholder="Type Here")
+    a = st.text_input("Item Category", placeholder="Type Here")
+    b = st.text_input("Subcategory-1", placeholder="Type Here")
+    c = st.text_input("Subcategory-2", placeholder="Type Here")
+    d = st.text_input("Item Rating", placeholder="Type Here")
     
     # Prediction button
     if st.button("Predict"):
-        result = predict_selling_price(model, float(a), float(b), float(c))
+        result = predict_selling_price(model, a, b, c, d)
         st.success(f"The predicted selling price is: {result[0]:,.2f}")
 
-
-
 from sklearn.model_selection import train_test_split
-from sklearn.linear_model import LinearRegression
-import warnings
-warnings.filterwarnings('ignore')
-
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.preprocessing import LabelEncoder
+import pandas as pd
 
 train = pd.read_csv('Train.csv')
 test = pd.read_csv('Test.csv')
 
+# Combine train and test data for label encoding
+combined_data = pd.concat([train, test], ignore_index=True)
 
-train['Date'] = pd.to_datetime(train['Date'])
-test['Date'] = pd.to_datetime(test['Date'])
+label_encoders = {}
+for col in combined_data.select_dtypes(include=['object']).columns:
+    label_encoders[col] = LabelEncoder()
+    # Fit on the combined data
+    label_encoders[col].fit(combined_data[col])
+    # Transform both train and test data
+    train[col] = label_encoders[col].transform(train[col])
+    test[col] = label_encoders[col].transform(test[col])
 
-
-train['Month'] = train['Date'].dt.month
-test['Month'] = test['Date'].dt.month
-train['Year'] = train['Date'].dt.year
-test['Year'] = test['Date'].dt.year
-
-
-X = train[['Item_Rating', 'Month', 'Year']]
+X = train.drop(['Selling_Price', 'Date', 'Product', 'Product_Brand'], axis=1)  
 y = train['Selling_Price']
-
 
 X_train, X_val, y_train, y_val = train_test_split(X, y, test_size=0.2, random_state=42)
 
-
-
-model = LinearRegression()
+model = RandomForestRegressor(n_estimators=100, random_state=42)
 model.fit(X_train, y_train)
 
 
+X_train.head()
        
 if __name__ == "__main__":
     main()
